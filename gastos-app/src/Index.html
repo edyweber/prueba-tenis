@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gastos y cuentas</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --ink: #1d2433; --muted: #667085; --line: #e4e7ec;
+    --accent: #2f5bea; --accent-ink: #fff; --gasto: #c4320a; --ingreso: #067647;
+    --warn-bg: #fffaeb; --warn: #b54708; --bar: #9db4f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11141a; --card: #1a1f29; --ink: #e8ebf1; --muted: #98a2b3; --line: #2b3240;
+      --accent: #7c9cff; --accent-ink: #0b1020; --gasto: #ff8a65; --ingreso: #47cd89;
+      --warn-bg: #3a2a0c; --warn: #fdb022; --bar: #3d5bb8;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background: var(--bg); color: var(--ink); }
+  header { padding: 16px; display: flex; align-items: baseline; justify-content: space-between;
+           gap: 12px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  nav { display: flex; gap: 4px; padding: 0 16px; max-width: 1100px; margin: 0 auto; flex-wrap: wrap; }
+  nav button { border: 0; background: none; padding: 8px 12px; border-radius: 8px; cursor: pointer;
+               color: var(--muted); font: inherit; font-weight: 600; }
+  nav button.on { background: var(--card); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); }
+  .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+  .kpi .v { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .kpi .s { font-size: 13px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  td.n, th.n { text-align: right; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  .gasto { color: var(--gasto); } .ingreso { color: var(--ingreso); }
+  .pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 99px;
+          border: 1px solid var(--line); color: var(--muted); }
+  .bar { height: 8px; background: var(--bar); border-radius: 4px; }
+  form { display: grid; gap: 10px; }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  input, select, textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+                            background: var(--bg); color: var(--ink); width: 100%; }
+  .row2 { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+  .btn { border: 0; background: var(--accent); color: var(--accent-ink); padding: 9px 14px; border-radius: 8px;
+         font: inherit; font-weight: 600; cursor: pointer; }
+  .btn.ghost { background: none; color: var(--accent); box-shadow: inset 0 0 0 1px var(--line); }
+  .btn.danger { background: none; color: var(--gasto); padding: 2px 6px; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .filters > * { width: auto; flex: 1 1 140px; }
+  .banner { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 10px 14px;
+            margin-bottom: 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--bg);
+           padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; }
+  #toast.show { opacity: 1; }
+  .hidden { display: none !important; }
+  @media (max-width: 560px) { .row2 { grid-template-columns: 1fr; } .hide-sm { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Gastos y cuentas</h1>
+  <span class="muted"><span id="cotiz"></span> <button class="btn ghost" id="logout" style="padding:3px 10px;margin-left:8px">Salir</button></span>
+</header>
+<nav id="tabs" class="hidden">
+  <button data-tab="resumen" class="on">Resumen</button>
+  <button data-tab="cargar">Cargar</button>
+  <button data-tab="movimientos">Movimientos</button>
+  <button data-tab="config">Configuración</button>
+</nav>
+<main>
+  <div id="loading" class="muted">Cargando…</div>
+  <div id="login" class="card hidden" style="max-width:360px;margin:40px auto">
+    <h2>Ingresar</h2>
+    <form id="formLogin">
+      <label>Contraseña <input type="password" name="pass" required autocomplete="current-password"></label>
+      <button class="btn">Entrar</button>
+      <p class="muted" id="loginError"></p>
+    </form>
+  </div>
+  <div id="importBanner" class="banner hidden">
+    <span>Todavía no se importaron los gastos de “Hoja 1”.</span>
+    <button class="btn" data-action="importar">Importar ahora</button>
+  </div>
+
+  <!-- RESUMEN -->
+  <section id="tab-resumen" class="hidden">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid">
+      <div class="card">
+        <h2>Cuentas entre socios</h2>
+        <p class="muted" id="saldoExplica"></p>
+        <div class="scroll"><table id="tblSaldos"></table></div>
+        <h2 style="margin-top:16px">Para quedar a mano</h2>
+        <div id="transferencias"></div>
+      </div>
+      <div class="card">
+        <h2>Gastos por persona</h2>
+        <div class="scroll"><table id="tblPersonas"></table></div>
+      </div>
+      <div class="card">
+        <h2>Por mes</h2>
+        <div class="scroll"><table id="tblMeses"></table></div>
+      </div>
+      <div class="card">
+        <h2>Gastos por concepto</h2>
+        <div class="scroll"><table id="tblConceptos"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CARGAR -->
+  <section id="tab-cargar" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <h2 class="gasto">Nuevo gasto</h2>
+        <form id="formGasto" data-tipo="Gasto">
+          <div class="row2">
+            <label>Fecha <input type="date" name="fecha" required></label>
+            <label>Quién pagó <select name="persona" required></select></label>
+          </div>
+          <label>Descripción <input name="descripcion" list="conceptos" required placeholder="Ej: Creditos GetPerspective"></label>
+          <div class="row2">
+            <label>Monto <input name="monto" type="number" step="0.01" min="0.01" required></label>
+            <label>Moneda <select name="moneda"><option>USD</option><option>ARS</option></select></label>
+          </div>
+          <label>Nota <input name="nota" placeholder="Opcional"></label>
+          <button class="btn">Guardar gasto</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2 class="ingreso">Nuevo ingreso</h2>
+        <form id="formIngreso" data-tipo="Ingreso">
+          <div class="row2">
+            <label>Fecha <input type="date" name="fecha" required></label>
+            <label>Quién lo cobró <select name="persona"></select></label>
+          </div>
+          <label>Descripción / cliente <input name="descripcion" required placeholder="Ej: Jorge — Noviembre"></label>
+          <div class="row2">
+            <label>Monto <input name="monto" type="number" step="0.01" min="0.01" required></label>
+            <label>Moneda <select name="moneda"><option>USD</option><option>ARS</option></select></label>
+          </div>
+          <label>Nota <input name="nota" placeholder="Opcional"></label>
+          <button class="btn">Guardar ingreso</button>
+        </form>
+      </div>
+    </div>
+    <datalist id="conceptos"></datalist>
+  </section>
+
+  <!-- MOVIMIENTOS -->
+  <section id="tab-movimientos" class="hidden">
+    <div class="card">
+      <div class="filters">
+        <input id="fBuscar" placeholder="Buscar…">
+        <select id="fTipo"><option value="">Gastos e ingresos</option><option>Gasto</option><option>Ingreso</option></select>
+        <select id="fPersona"></select>
+        <select id="fMes"></select>
+        <select id="fEstado"><option value="">Todos</option><option value="pend">Pendientes</option><option value="liq">Liquidados</option></select>
+      </div>
+      <p class="muted" id="movTotal"></p>
+      <div class="scroll"><table id="tblMov"></table></div>
+    </div>
+  </section>
+
+  <!-- CONFIG -->
+  <section id="tab-config" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <h2>Cotización y socios</h2>
+        <form id="formConfig">
+          <label>Dólar (ARS por USD) <input name="dolar" type="number" step="0.01" min="0.01" required></label>
+          <label>Socios (entre quienes se reparten gastos e ingresos, separados por coma)
+            <input name="socios" required></label>
+          <p class="muted" id="personasDetectadas"></p>
+          <button class="btn">Guardar</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Datos</h2>
+        <p class="muted">Re-importar vuelve a leer “Hoja 1” y reemplaza solo los movimientos que vinieron de ahí. Lo cargado desde la app no se toca.</p>
+        <button class="btn ghost" data-action="importar">Importar / re-importar “Hoja 1”</button>
+        <p class="muted" style="margin-top:16px">Cuando se saldan las cuentas entre socios, marcá todo como liquidado: los saldos vuelven a cero y se arranca de nuevo.</p>
+        <button class="btn ghost" data-action="liquidar">Marcar todo como liquidado</button>
+      </div>
+    </div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  var state = null;
+  var CAJA = 'Caja común';
+  var pass = '';
+  try { pass = localStorage.getItem('gastos-pass') || ''; } catch (e) {}
+  function savePass(p) { pass = p; try { p ? localStorage.setItem('gastos-pass', p) : localStorage.removeItem('gastos-pass'); } catch (e) {} }
+
+  // ------------------------------------------------ backend: Apps Script o servidor local de desarrollo
+  function call(fn) {
+    var args = [pass].concat(Array.prototype.slice.call(arguments, 1));
+    return new Promise(function (resolve, reject) {
+      if (window.google && google.script && google.script.run) {
+        var runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+        runner[fn].apply(runner, args);
+      } else {
+        fetch('/api/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(args) })
+          .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error); return j; }); })
+          .then(resolve, reject);
+      }
+    });
+  }
+
+  // ------------------------------------------------ utilidades
+  var $ = function (s) { return document.querySelector(s); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var fmtARS = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+  var fmtUSD = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+  function ars(n) { return fmtARS.format(n); }
+  function usd(n) { return fmtUSD.format(n); }
+  function orig(m) { return m.moneda === 'USD' ? usd(m.monto) : ars(m.monto); }
+  var MES_TXT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  function mesKey(f) { return f ? f.slice(0, 7) : 'sin fecha'; }
+  function mesLabel(k) { if (k === 'sin fecha') return k; var p = k.split('-'); return MES_TXT[+p[1] - 1] + ' ' + p[0]; }
+  function fechaTxt(f) { if (!f) return '—'; var p = f.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+  function toast(msg) { var t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('show'); }, 3500); }
+  function today() { var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+  function sinAsignar(p) { return p || CAJA; }
+  function sum(arr, f) { return arr.reduce(function (a, x) { return a + f(x); }, 0); }
+
+  // ------------------------------------------------ contabilidad
+  /** Todo se pasa a pesos con la cotización configurada (como hace la planilla). */
+  function enARS(m) { return m.moneda === 'USD' ? m.monto * state.config.dolar : m.monto; }
+
+  /**
+   * Saldo de cada socio sobre los movimientos pendientes (no liquidados):
+   *   puso   = gastos que pagó de su bolsillo − ingresos que cobró él
+   *   le toca = (ingresos − gastos) / cantidad de socios   (resultado repartido en partes iguales)
+   *   saldo  = puso + le toca  → positivo: le tienen que dar; negativo: tiene que poner.
+   * Lo que no tiene socio asignado (ej. un ingreso que entró a la cuenta común) es de la "Caja común":
+   * la caja también tiene saldo (lo que cobró menos lo que pagó), así la suma de todos los saldos da cero
+   * y las transferencias sugeridas incluyen repartir lo que hay en la caja.
+   */
+  function calcularSaldos() {
+    var socios = state.config.socios;
+    var pend = state.movimientos.filter(function (m) { return !m.liquidado; });
+    var gastos = sum(pend.filter(isGasto), enARS);
+    var ingresos = sum(pend.filter(isIngreso), enARS);
+    var resultado = ingresos - gastos;
+    var parte = socios.length ? resultado / socios.length : 0;
+    var filas = socios.map(function (s) {
+      var mios = pend.filter(function (m) { return m.persona === s; });
+      var pagado = sum(mios.filter(isGasto), enARS);
+      var cobrado = sum(mios.filter(isIngreso), enARS);
+      return { nombre: s, pagado: pagado, cobrado: cobrado, parte: parte, saldo: pagado - cobrado + parte };
+    });
+    var fuera = pend.filter(function (m) { return socios.indexOf(m.persona) < 0; });
+    var caja = { gastos: sum(fuera.filter(isGasto), enARS), ingresos: sum(fuera.filter(isIngreso), enARS) };
+    caja.saldo = caja.gastos - caja.ingresos;
+    return { filas: filas, gastos: gastos, ingresos: ingresos, resultado: resultado, parte: parte, caja: caja, n: pend.length };
+  }
+  function isGasto(m) { return m.tipo === 'Gasto'; }
+  function isIngreso(m) { return m.tipo === 'Ingreso'; }
+
+  /** Transferencias mínimas: los que deben le pagan a los que tienen saldo a favor. */
+  function transferencias(filas) {
+    var deudores = filas.filter(function (f) { return f.saldo < -1; }).map(function (f) { return { n: f.nombre, v: -f.saldo }; });
+    var acreedores = filas.filter(function (f) { return f.saldo > 1; }).map(function (f) { return { n: f.nombre, v: f.saldo }; });
+    deudores.sort(function (a, b) { return b.v - a.v; }); acreedores.sort(function (a, b) { return b.v - a.v; });
+    var out = [], i = 0, j = 0;
+    while (i < deudores.length && j < acreedores.length) {
+      var x = Math.min(deudores[i].v, acreedores[j].v);
+      out.push({ de: deudores[i].n, a: acreedores[j].n, monto: x });
+      deudores[i].v -= x; acreedores[j].v -= x;
+      if (deudores[i].v < 1) i++;
+      if (acreedores[j].v < 1) j++;
+    }
+    return out;
+  }
+
+  // ------------------------------------------------ render
+  function render() {
+    $('#loading').classList.add('hidden');
+    $('#login').classList.add('hidden');
+    $('#tabs').classList.remove('hidden');
+    $('#logout').classList.remove('hidden');
+    $('#importBanner').classList.toggle('hidden', state.importado);
+    $('#cotiz').textContent = 'Dólar: ' + ars(state.config.dolar) + ' · ' + state.movimientos.length + ' movimientos';
+    renderResumen(); renderSelects(); renderMovimientos(); renderConfig();
+    showTab(currentTab);
+  }
+
+  function renderResumen() {
+    var all = state.movimientos;
+    var G = all.filter(isGasto), I = all.filter(isIngreso);
+    var tg = sum(G, enARS), ti = sum(I, enARS), d = state.config.dolar;
+    var s = calcularSaldos();
+    $('#kpis').innerHTML = [
+      kpi('Gastos totales', ars(tg), usd(tg / d) + ' · ' + G.length + ' gastos', 'gasto'),
+      kpi('Ingresos totales', ars(ti), usd(ti / d) + ' · ' + I.length + ' ingresos', 'ingreso'),
+      kpi('Resultado', ars(ti - tg), usd((ti - tg) / d), ti - tg >= 0 ? 'ingreso' : 'gasto'),
+      kpi('Pendiente de liquidar', ars(s.gastos), 'gastos en ' + s.n + ' movimientos sin saldar', '')
+    ].join('');
+
+    $('#saldoExplica').innerHTML = 'Sobre movimientos pendientes. Resultado ' + ars(s.resultado) + ' repartido entre ' +
+      s.filas.length + ' socios = ' + ars(s.parte) + ' c/u. <b>Saldo positivo</b>: le tienen que devolver; <b>negativo</b>: tiene que poner.';
+    var rows = s.filas.map(function (f) {
+      return '<tr><td>' + esc(f.nombre) + '</td><td class="n">' + ars(f.pagado) + '</td><td class="n hide-sm">' + ars(f.cobrado) +
+        '</td><td class="n hide-sm">' + ars(f.parte) + '</td><td class="n ' + (f.saldo >= 0 ? 'ingreso' : 'gasto') + '"><b>' + ars(f.saldo) + '</b></td></tr>';
+    });
+    if (s.caja.gastos || s.caja.ingresos) {
+      rows.push('<tr class="muted"><td>' + CAJA + '</td><td class="n">' + ars(s.caja.gastos) + '</td><td class="n hide-sm">' + ars(s.caja.ingresos) +
+        '</td><td class="n hide-sm">—</td><td class="n ' + (s.caja.saldo >= 0 ? 'ingreso' : 'gasto') + '"><b>' + ars(s.caja.saldo) + '</b></td></tr>');
+    }
+    $('#tblSaldos').innerHTML = '<tr><th>Socio</th><th class="n">Pagó</th><th class="n hide-sm">Cobró</th><th class="n hide-sm">Le toca</th><th class="n">Saldo</th></tr>' + rows.join('');
+    var tr = transferencias(s.filas.concat(s.caja.gastos || s.caja.ingresos ? [{ nombre: CAJA, saldo: s.caja.saldo }] : []));
+    $('#transferencias').innerHTML = tr.length ? '<table>' + tr.map(function (t) {
+      return '<tr><td>' + esc(t.de) + ' → ' + esc(t.a) + '</td><td class="n"><b>' + ars(t.monto) + '</b></td><td class="n muted">' + usd(t.monto / d) + '</td></tr>';
+    }).join('') + '</table>' : '<p class="muted">Están a mano.</p>';
+    if (s.caja.gastos) {
+      $('#transferencias').innerHTML += '<p class="muted">Hay gastos sin persona asignada; se cuentan como pagados por la ' + CAJA + '.</p>';
+    }
+
+    // por persona (todos los gastos)
+    var porPersona = groupBy(G, function (m) { return sinAsignar(m.persona); });
+    var maxP = Math.max.apply(null, Object.keys(porPersona).map(function (k) { return sum(porPersona[k], enARS); }).concat([1]));
+    $('#tblPersonas').innerHTML = '<tr><th>Persona</th><th class="n">USD</th><th class="n">ARS</th><th class="n">Total en ARS</th><th class="hide-sm" style="width:25%"></th></tr>' +
+      sortedKeys(porPersona, enARS).map(function (k) {
+        var l = porPersona[k], t = sum(l, enARS);
+        return '<tr><td>' + esc(k) + ' <span class="muted">(' + l.length + ')</span></td><td class="n">' + usd(sum(l, soloMoneda('USD'))) +
+          '</td><td class="n">' + ars(sum(l, soloMoneda('ARS'))) + '</td><td class="n"><b>' + ars(t) + '</b></td><td class="hide-sm"><div class="bar" style="width:' + (100 * t / maxP) + '%"></div></td></tr>';
+      }).join('');
+
+    // por mes
+    var porMes = groupBy(all, function (m) { return mesKey(m.fecha); });
+    var meses = Object.keys(porMes).sort().reverse();
+    $('#tblMeses').innerHTML = '<tr><th>Mes</th><th class="n">Gastos</th><th class="n">Ingresos</th><th class="n">Resultado</th></tr>' +
+      meses.map(function (k) {
+        var g = sum(porMes[k].filter(isGasto), enARS), i = sum(porMes[k].filter(isIngreso), enARS);
+        return '<tr><td>' + mesLabel(k) + '</td><td class="n gasto">' + ars(g) + '</td><td class="n ingreso">' + ars(i) +
+          '</td><td class="n"><b>' + ars(i - g) + '</b></td></tr>';
+      }).join('');
+
+    // por concepto: agrupa por la primera palabra significativa de la descripción
+    var porConcepto = groupBy(G, concepto);
+    var keys = sortedKeys(porConcepto, enARS);
+    var maxC = keys.length ? sum(porConcepto[keys[0]], enARS) : 1;
+    $('#tblConceptos').innerHTML = '<tr><th>Concepto</th><th class="n">Total en ARS</th><th class="hide-sm" style="width:30%"></th></tr>' +
+      keys.slice(0, 15).map(function (k) {
+        var t = sum(porConcepto[k], enARS);
+        return '<tr><td>' + esc(k) + ' <span class="muted">(' + porConcepto[k].length + ')</span></td><td class="n">' + ars(t) +
+          '</td><td class="hide-sm"><div class="bar" style="width:' + (100 * t / maxC) + '%"></div></td></tr>';
+      }).join('');
+  }
+
+  var CONCEPTOS = [
+    [/perspective/i, 'GetPerspective'], [/meta|facebook|fb/i, 'Meta / Facebook Ads'], [/tiktok/i, 'TikTok'],
+    [/google workspace/i, 'Google Workspace'], [/zoho/i, 'Zoho'], [/wix/i, 'WIX'], [/dreamina/i, 'Dreamina'],
+    [/felix/i, 'Felix'], [/dominio/i, 'Dominios']
+  ];
+  function concepto(m) {
+    for (var i = 0; i < CONCEPTOS.length; i++) if (CONCEPTOS[i][0].test(m.descripcion)) return CONCEPTOS[i][1];
+    return m.descripcion.trim();
+  }
+  function soloMoneda(mon) { return function (m) { return m.moneda === mon ? m.monto : 0; }; }
+  function kpi(t, v, s, cls) { return '<div class="card kpi"><div class="s">' + t + '</div><div class="v ' + cls + '">' + v + '</div><div class="s">' + s + '</div></div>'; }
+  function groupBy(arr, f) { var o = {}; arr.forEach(function (x) { var k = f(x); (o[k] = o[k] || []).push(x); }); return o; }
+  function sortedKeys(g, f) { return Object.keys(g).sort(function (a, b) { return sum(g[b], f) - sum(g[a], f); }); }
+
+  function options(list, selected, first) {
+    return (first ? '<option value="">' + esc(first) + '</option>' : '') + list.map(function (p) {
+      return '<option' + (p === selected ? ' selected' : '') + '>' + esc(p) + '</option>'; }).join('');
+  }
+  function renderSelects() {
+    var personas = state.personas;
+    var fg = $('#formGasto [name=persona]'), fi = $('#formIngreso [name=persona]');
+    fg.innerHTML = options(personas, fg.value, 'Elegí…');
+    fi.innerHTML = options(personas, fi.value, 'Caja común / sin asignar');
+    var fp = $('#fPersona'), fm = $('#fMes');
+    var conSin = personas.concat(state.movimientos.some(function (m) { return !m.persona; }) ? [CAJA] : []);
+    fp.innerHTML = options(conSin, fp.value, 'Todas las personas');
+    var meses = Object.keys(groupBy(state.movimientos, function (m) { return mesKey(m.fecha); })).sort().reverse();
+    var mv = fm.value;
+    fm.innerHTML = '<option value="">Todos los meses</option>' + meses.map(function (k) {
+      return '<option value="' + k + '"' + (k === mv ? ' selected' : '') + '>' + mesLabel(k) + '</option>'; }).join('');
+    var descs = {}; state.movimientos.filter(isGasto).forEach(function (m) { descs[m.descripcion.trim()] = 1; });
+    $('#conceptos').innerHTML = Object.keys(descs).sort().map(function (d) { return '<option value="' + esc(d) + '">'; }).join('');
+    document.querySelectorAll('form[data-tipo] [name=fecha]').forEach(function (el) { if (!el.value) el.value = today(); });
+  }
+
+  function renderMovimientos() {
+    var q = $('#fBuscar').value.trim().toLowerCase(), tipo = $('#fTipo').value, per = $('#fPersona').value,
+        mes = $('#fMes').value, est = $('#fEstado').value;
+    var list = state.movimientos.filter(function (m) {
+      if (tipo && m.tipo !== tipo) return false;
+      if (per && sinAsignar(m.persona) !== per) return false;
+      if (mes && mesKey(m.fecha) !== mes) return false;
+      if (est === 'pend' && m.liquidado) return false;
+      if (est === 'liq' && !m.liquidado) return false;
+      if (q && (m.descripcion + ' ' + m.nota + ' ' + m.persona).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    }).sort(function (a, b) { return (b.fecha || '').localeCompare(a.fecha || ''); });
+    var g = sum(list.filter(isGasto), enARS), i = sum(list.filter(isIngreso), enARS);
+    $('#movTotal').textContent = list.length + ' movimientos · gastos ' + ars(g) + ' · ingresos ' + ars(i);
+    $('#tblMov').innerHTML = '<tr><th>Fecha</th><th>Descripción</th><th>Persona</th><th class="n">Monto</th><th class="n hide-sm">En ARS</th><th></th></tr>' +
+      list.map(function (m) {
+        var cls = m.tipo === 'Gasto' ? 'gasto' : 'ingreso', sign = m.tipo === 'Gasto' ? '−' : '+';
+        return '<tr><td>' + fechaTxt(m.fecha) + '</td><td>' + esc(m.descripcion) +
+          (m.liquidado ? ' <span class="pill">liquidado</span>' : '') +
+          (m.nota ? '<div class="muted">' + esc(m.nota) + '</div>' : '') + '</td><td>' + esc(sinAsignar(m.persona)) +
+          '</td><td class="n ' + cls + '">' + sign + ' ' + orig(m) + '</td><td class="n hide-sm muted">' + ars(enARS(m)) +
+          '</td><td class="n"><button class="btn danger" title="Borrar" data-del="' + esc(m.id) + '">✕</button></td></tr>';
+      }).join('');
+  }
+
+  function renderConfig() {
+    var f = $('#formConfig');
+    if (document.activeElement && f.contains(document.activeElement)) return;
+    f.dolar.value = state.config.dolar;
+    f.socios.value = state.config.socios.join(', ');
+    $('#personasDetectadas').textContent = 'Personas detectadas en la columna “Garpado x”: ' + state.personas.join(', ');
+  }
+
+  // ------------------------------------------------ tabs y eventos
+  var currentTab = 'resumen';
+  function showTab(t) {
+    currentTab = t;
+    document.querySelectorAll('#tabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === t); });
+    document.querySelectorAll('main > section').forEach(function (s) { s.classList.toggle('hidden', s.id !== 'tab-' + t); });
+  }
+  $('#tabs').addEventListener('click', function (e) { if (e.target.dataset.tab) showTab(e.target.dataset.tab); });
+
+  function busy(btn, p) {
+    if (btn) btn.disabled = true;
+    return p.then(function (data) { state = data; render(); return data; })
+      .catch(function (err) {
+        var msg = String(err && err.message || err);
+        if (/Contraseña/.test(msg)) { savePass(''); showLogin(pass ? msg : ''); } else toast('Error: ' + msg);
+        throw err;
+      })
+      .finally(function () { if (btn) btn.disabled = false; });
+  }
+
+  document.querySelectorAll('form[data-tipo]').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var fd = new FormData(form), mov = { tipo: form.dataset.tipo };
+      fd.forEach(function (v, k) { mov[k] = v; });
+      mov.monto = Number(mov.monto);
+      busy(form.querySelector('button'), call('addMovimiento', mov)).then(function () {
+        form.descripcion.value = ''; form.monto.value = ''; form.nota.value = '';
+        toast((mov.tipo === 'Gasto' ? 'Gasto' : 'Ingreso') + ' guardado ✓');
+      }).catch(function () {});
+    });
+  });
+
+  $('#formConfig').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target;
+    busy(f.querySelector('button'), call('saveConfig', { dolar: Number(f.dolar.value), socios: f.socios.value.split(',') }))
+      .then(function () { f.blur && document.activeElement.blur(); renderConfig(); toast('Configuración guardada ✓'); }).catch(function () {});
+  });
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t.dataset.del) {
+      var m = state.movimientos.filter(function (x) { return x.id === t.dataset.del; })[0];
+      if (m && confirm('¿Borrar “' + m.descripcion + '” (' + orig(m) + ')?')) {
+        busy(t, call('deleteMovimiento', m.id)).then(function () { toast('Borrado'); }).catch(function () {});
+      }
+    }
+    if (t.dataset.action === 'importar') {
+      if (!state.importado || confirm('¿Re-importar “Hoja 1”? Reemplaza los movimientos importados antes.')) {
+        busy(t, call('importarDesdeOrigen')).then(function (d) { toast('Importados ' + d.movimientos.filter(function (m) { return m.origen.indexOf('Hoja 1') === 0; }).length + ' movimientos ✓'); }).catch(function () {});
+      }
+    }
+    if (t.dataset.action === 'liquidar' && confirm('¿Marcar todos los movimientos como liquidados? Los saldos entre socios vuelven a cero.')) {
+      busy(t, call('liquidarTodo')).then(function () { toast('Cuentas saldadas ✓'); }).catch(function () {});
+    }
+  });
+
+  ['#fBuscar', '#fTipo', '#fPersona', '#fMes', '#fEstado'].forEach(function (s) {
+    $(s).addEventListener('input', renderMovimientos);
+  });
+
+  function showLogin(msg) {
+    $('#loading').classList.add('hidden');
+    document.querySelectorAll('main > section, #importBanner, #tabs, #logout').forEach(function (el) { el.classList.add('hidden'); });
+    $('#login').classList.remove('hidden');
+    $('#loginError').textContent = msg || '';
+    $('#formLogin').pass.focus();
+  }
+  $('#formLogin').addEventListener('submit', function (e) {
+    e.preventDefault();
+    savePass(e.target.pass.value);
+    var btn = e.target.querySelector('button');
+    btn.disabled = true;
+    call('getData').then(function (data) { state = data; render(); e.target.reset(); })
+      .catch(function (err) { savePass(''); $('#loginError').textContent = String(err && err.message || err); })
+      .finally(function () { btn.disabled = false; });
+  });
+  $('#logout').addEventListener('click', function () { savePass(''); state = null; showLogin(''); });
+
+  if (!pass) showLogin('');
+  else busy(null, call('getData')).catch(function () { if (!$('#login').classList.contains('hidden')) return; $('#loading').textContent = 'No se pudieron cargar los datos.'; });
+})();
+</script>
+</body>
+</html>

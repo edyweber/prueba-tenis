@@ -1,0 +1,11 @@
+{
+  "name": "gastos-app",
+  "private": true,
+  "description": "Web app (Google Apps Script) para llevar gastos e ingresos desde la planilla de Google Sheets",
+  "scripts": {
+    "dev": "node dev/server.js",
+    "dev:reset": "RESET=1 node dev/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=18" }
+}
