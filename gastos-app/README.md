@@ -1,10 +1,38 @@
 # Gastos y cuentas
 
-Web app para resumir los gastos de la planilla **“planilla pedorra de gastos”** (Google Sheets),
-cargar gastos e ingresos nuevos y llevar las cuentas entre socios.
+Web app para llevar los gastos e ingresos entre socios (GCM, EW, LM, JG), todo en dólares.
 
-Corre como **Google Apps Script** pegado a la misma planilla: no hace falta servidor ni base de datos,
-los datos quedan en el Sheet y se publica con una URL pública protegida con contraseña.
+**App:** https://claude.ai/artifact/CutQViywdiDZqSjEAq1aQa (contraseña: `gastos2026`, se cambia en
+`web/index.html`, constante `PASSWORD`).
+
+La planilla de Google (“planilla pedorra de gastos”) se usó **solo como punto de partida**: sus 53 gastos
+y el ingreso de octubre se cargaron una vez en la base de datos de la app. Desde ahí todo se carga y se
+consulta en la app; la planilla ya no se usa.
+
+## Dónde está cada cosa
+
+| Archivo | Qué es |
+|---|---|
+| `web/index.html` | **La app** (publicada en claude.ai, con base de datos compartida). |
+| `seed/` | Datos iniciales sacados de la planilla (`dev/make-seed.js` los genera). |
+| `src/Code.gs`, `src/Index.html` | Versión anterior como Google Apps Script (ya no se usa; su parser de la planilla generó el seed). |
+| `dev/`, `test/` | Copia de la planilla, servidor local y tests del parser. |
+
+### Base de datos de la app
+
+- `movimientos/<id>`: `fecha` (aaaa-mm-dd), `tipo` (Gasto/Ingreso), `descripcion`, `moneda` (USD/ARS),
+  `monto`, `persona`, `nota`, `liquidado`, `origen`, `creado` (ms).
+- `config/main`: `dolar`, `socios`, `personas`, `liquidadoHasta` (ms: lo creado antes queda liquidado).
+
+### Quién puede usarla
+
+El link es privado hasta que lo compartas desde el menú **Compartir** de la app. Para que alguien pueda
+**cargar** gastos tiene que tener acceso como **Colaborador** (o Editor); con acceso de Lector ve todo
+pero no puede cargar ni borrar.
+
+---
+
+> Lo que sigue describe la versión anterior en Google Apps Script, que ya no se usa.
 
 ## Qué hace
 
