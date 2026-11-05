@@ -2,8 +2,12 @@
 
 Web app para llevar los gastos e ingresos entre socios (GCM, EW, LM, JG), todo en dólares.
 
-**App:** https://claude.ai/artifact/CutQViywdiDZqSjEAq1aQa (contraseña: `gastos2026`, se cambia en
-`web/index.html`, constante `PASSWORD`).
+**App:** https://gastos-y-cuentas.vercel.app (contraseña: `gastos2026`, se cambia en
+`vercel/lib/app.js`, constante `PASSWORD`).
+
+Publicada en Vercel (proyecto `gastos-y-cuentas`). Los datos se guardan en un almacenamiento privado de
+Vercel Blob (`gastos-datos`): `gastos/estado.json` y una copia por cada cambio en `gastos/historial/`
+(se guardan las últimas 100). Para publicar cambios: `cd vercel && npx vercel deploy --prod`.
 
 La planilla de Google (“planilla pedorra de gastos”) se usó **solo como punto de partida**: sus 53 gastos
 y el ingreso de octubre se cargaron una vez en la base de datos de la app. Desde ahí todo se carga y se
@@ -13,22 +17,21 @@ consulta en la app; la planilla ya no se usa.
 
 | Archivo | Qué es |
 |---|---|
-| `web/index.html` | **La app** (publicada en claude.ai, con base de datos compartida). |
+| `vercel/` | **La app**: `index.html` (pantalla), `api/data.js` + `lib/` (servidor, contraseña, datos). `npm run dev` / `npm test`. |
+| `web/index.html` | Versión anterior publicada en claude.ai (ya no se usa). |
 | `seed/` | Datos iniciales sacados de la planilla (`dev/make-seed.js` los genera). |
 | `src/Code.gs`, `src/Index.html` | Versión anterior como Google Apps Script (ya no se usa; su parser de la planilla generó el seed). |
 | `dev/`, `test/` | Copia de la planilla, servidor local y tests del parser. |
 
-### Base de datos de la app
+### Formato de los datos (`gastos/estado.json`)
 
-- `movimientos/<id>`: `fecha` (aaaa-mm-dd), `tipo` (Gasto/Ingreso), `descripcion`, `moneda` (USD/ARS),
+- `movimientos.<id>`: `fecha` (aaaa-mm-dd), `tipo` (Gasto/Ingreso), `descripcion`, `moneda` (USD/ARS),
   `monto`, `persona`, `nota`, `liquidado`, `origen`, `creado` (ms).
-- `config/main`: `dolar`, `socios`, `personas`, `liquidadoHasta` (ms: lo creado antes queda liquidado).
+- `config`: `dolar`, `socios`, `personas`, `liquidadoHasta` (ms: lo creado antes queda liquidado).
 
 ### Quién puede usarla
 
-El link es privado hasta que lo compartas desde el menú **Compartir** de la app. Para que alguien pueda
-**cargar** gastos tiene que tener acceso como **Colaborador** (o Editor); con acceso de Lector ve todo
-pero no puede cargar ni borrar.
+Cualquiera que tenga la URL y la contraseña, desde cualquier navegador, sin cuenta.
 
 ---
 

@@ -1,0 +1,12 @@
+{
+  "name": "gastos-y-cuentas",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "test": "node --test test.js"
+  },
+  "dependencies": {
+    "@vercel/blob": "2.8.2"
+  }
+}
