@@ -34,3 +34,16 @@ test('valida', async () => {
   await assert.rejects(ejecutar({ pass: P, fn: 'addMovimiento', args: [{ fecha: '2026-11-05', tipo: 'Gasto', descripcion: 'x', monto: 0, persona: 'EW' }] }), /monto/);
   await assert.rejects(ejecutar({ pass: P, fn: 'borrarTodo' }), /desconocida/);
 });
+
+test('corrige datos viejos: lo de la planilla queda pendiente, lo liquidado en la app se respeta', async () => {
+  fs.writeFileSync(process.env.LOCAL_DATA_FILE, JSON.stringify({
+    config: { dolar: 1550, socios: ['EW'], liquidadoHasta: 0 },
+    movimientos: {
+      a: { fecha: '2026-07-18', tipo: 'Gasto', descripcion: 'GP', moneda: 'USD', monto: 50, persona: 'EW', liquidado: true, origen: 'Planilla: fila 8', creado: 1 },
+      b: { fecha: '2026-11-05', tipo: 'Gasto', descripcion: 'App', moneda: 'USD', monto: 5, persona: 'EW', liquidado: true, origen: 'App', creado: 2 }
+    }
+  }));
+  const d = await ejecutar({ pass: P, fn: 'getData' });
+  assert.deepStrictEqual(d.movimientos.map(m => [m.id, m.liquidado]), [['a', false], ['b', true]]);
+  assert.strictEqual(JSON.parse(fs.readFileSync(process.env.LOCAL_DATA_FILE, 'utf8')).schema, 2);
+});

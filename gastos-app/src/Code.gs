@@ -186,10 +186,8 @@ function parseOrigen_(values, display) {
   }
 
   // Gastos.
-  var lastDate = null, liquidadoHasta = -1;
-  for (var r2 = hdr.row + 1; r2 < display.length; r2++) {
-    if (norm_(display[r2][c.desc]) === 'PAGADO') liquidadoHasta = r2;
-  }
+  // La fila "PAGADO" solo marca que esos servicios ya se pagaron al proveedor; no es una liquidación entre socios.
+  var lastDate = null;
   for (var i = hdr.row + 1; i < display.length; i++) {
     var desc = String(display[i][c.desc] || '').trim();
     if (!desc || norm_(desc) === 'PAGADO') continue;
@@ -212,7 +210,7 @@ function parseOrigen_(values, display) {
       monto: usd || ars,
       persona: String(display[i][c.persona] || '').trim(),
       nota: notas.join(' · '),
-      liquidado: i < liquidadoHasta,
+      liquidado: false,
       origen: SHEET_ORIGEN + ' fila ' + (i + 1)
     });
   }

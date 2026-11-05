@@ -324,7 +324,7 @@
 
     var liq = state.movimientos.filter(function (m) { return m.liquidado && isGasto(m); });
     $('#saldoExplica').innerHTML = (liq.length ? 'Solo cuenta lo que falta saldar: no incluye ' + usd(sum(liq, enUSD)) + ' en ' + liq.length +
-      ' gastos ya liquidados (los de arriba de la fila “PAGADO” de la planilla). El total gastado por cada uno está en “Gastos por persona”. ' : '') +
+      ' gastos ya liquidados (con “Marcar todo como liquidado”). El total gastado por cada uno está en “Gastos por persona”. ' : '') +
       'Resultado pendiente ' + usd(s.resultado) + ' repartido entre ' +
       s.filas.length + ' socios = ' + usd(s.parte) + ' c/u. <b>Saldo positivo</b>: le tienen que devolver; <b>negativo</b>: tiene que poner.';
     var rows = s.filas.map(function (f) {

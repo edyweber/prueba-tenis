@@ -1,5 +1,6 @@
 // Datos iniciales tomados de la planilla de Google (una sola vez). Generado desde seed/.
 export default {
+ "schema": 2,
  "config": {
   "dolar": 1550,
   "socios": [
@@ -24,7 +25,7 @@ export default {
    "monto": 30,
    "persona": "GCM",
    "nota": "(sin fecha en la planilla)",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 4",
    "creado": 1793880000000
   },
@@ -36,7 +37,7 @@ export default {
    "monto": 59.99,
    "persona": "GCM",
    "nota": "2do. año 89 año",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 5",
    "creado": 1793880000000
   },
@@ -48,7 +49,7 @@ export default {
    "monto": 50,
    "persona": "GCM",
    "nota": "",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 6",
    "creado": 1793880000000
   },
@@ -60,7 +61,7 @@ export default {
    "monto": 17.64,
    "persona": "GCM",
    "nota": "Mensual",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 7",
    "creado": 1793880000000
   },
@@ -72,7 +73,7 @@ export default {
    "monto": 50,
    "persona": "EW",
    "nota": "",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 8",
    "creado": 1793880000000
   },
@@ -84,7 +85,7 @@ export default {
    "monto": 49,
    "persona": "EW",
    "nota": "",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 10",
    "creado": 1793880000000
   },
@@ -96,7 +97,7 @@ export default {
    "monto": 2.79,
    "persona": "GCM",
    "nota": "",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 11",
    "creado": 1793880000000
   },
@@ -108,7 +109,7 @@ export default {
    "monto": 49,
    "persona": "GCM",
    "nota": "",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 12",
    "creado": 1793880000000
   },
@@ -120,7 +121,7 @@ export default {
    "monto": 100,
    "persona": "EW",
    "nota": "",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 14",
    "creado": 1793880000000
   },
@@ -132,7 +133,7 @@ export default {
    "monto": 100,
    "persona": "GCM",
    "nota": "",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 15",
    "creado": 1793880000000
   },
@@ -144,7 +145,7 @@ export default {
    "monto": 185144,
    "persona": "GCM",
    "nota": "Revisar",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 16",
    "creado": 1793880000000
   },
@@ -156,7 +157,7 @@ export default {
    "monto": 14,
    "persona": "",
    "nota": "Mensual · (sin fecha en la planilla)",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 17",
    "creado": 1793880000000
   },
@@ -168,7 +169,7 @@ export default {
    "monto": 50,
    "persona": "GCM",
    "nota": "(sin fecha en la planilla)",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 18",
    "creado": 1793880000000
   },
@@ -180,7 +181,7 @@ export default {
    "monto": 50,
    "persona": "EW",
    "nota": "(sin fecha en la planilla)",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 19",
    "creado": 1793880000000
   },
@@ -192,7 +193,7 @@ export default {
    "monto": 110500,
    "persona": "GCM",
    "nota": "Revisar · (sin fecha en la planilla)",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 20",
    "creado": 1793880000000
   },
@@ -204,7 +205,7 @@ export default {
    "monto": 150,
    "persona": "GCM",
    "nota": "(sin fecha en la planilla)",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 21",
    "creado": 1793880000000
   },
@@ -216,7 +217,7 @@ export default {
    "monto": 14,
    "persona": "GCM",
    "nota": "(sin fecha en la planilla)",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 22",
    "creado": 1793880000000
   },
@@ -228,7 +229,7 @@ export default {
    "monto": 14,
    "persona": "GCM",
    "nota": "Discontinuado, ahora esta hosteado en Iconosur · (sin fecha en la planilla)",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 23",
    "creado": 1793880000000
   },
@@ -240,7 +241,7 @@ export default {
    "monto": 17.64,
    "persona": "GCM",
    "nota": "(sin fecha en la planilla)",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 24",
    "creado": 1793880000000
   },
@@ -252,7 +253,7 @@ export default {
    "monto": 17.64,
    "persona": "GCM",
    "nota": "(sin fecha en la planilla)",
-   "liquidado": true,
+   "liquidado": false,
    "origen": "Planilla: fila 25",
    "creado": 1793880000000
   },

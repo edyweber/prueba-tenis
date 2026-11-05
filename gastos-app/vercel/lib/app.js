@@ -56,6 +56,17 @@ const acciones = {
   liquidarTodo: state => { state.config = { ...state.config, liquidadoHasta: Date.now() }; return true; }
 };
 
+/**
+ * Correcciones de datos ya guardados (se aplican una sola vez).
+ * v2: los gastos traídos de la planilla no estaban saldados ("PAGADO" = pagado al proveedor).
+ */
+function migrar(state) {
+  if ((state.schema || 1) >= 2) return false;
+  Object.values(state.movimientos).forEach(m => { if (String(m.origen || '').startsWith('Planilla')) m.liquidado = false; });
+  state.schema = 2;
+  return true;
+}
+
 export async function ejecutar({ pass, fn, args } = {}) {
   if (pass !== PASSWORD) { const e = new Error('Contraseña incorrecta.'); e.status = 401; throw e; }
   const accion = acciones[fn];
@@ -63,6 +74,7 @@ export async function ejecutar({ pass, fn, args } = {}) {
   const state = await load();
   state.movimientos = state.movimientos || {};
   state.config = state.config || {};
-  if (accion(state, ...(Array.isArray(args) ? args : []))) await save(state);
+  const migrado = migrar(state);
+  if (accion(state, ...(Array.isArray(args) ? args : [])) || migrado) await save(state);
   return vista(state);
 }

@@ -32,13 +32,13 @@ test('importa gastos e ingresos de Hoja 1', () => {
   assert.strictEqual(zoho.descripcion, 'Mensual Zoho Campaigns');
   assert.strictEqual(zoho.fecha, ''); // la primera fila no tiene fecha
   const fb = gastos.find(m => m.descripcion === 'Facebook campañas');
-  assert.deepStrictEqual([fb.moneda, fb.monto, fb.fecha, fb.liquidado], ['ARS', 185144, '2026-08-20', true]);
+  assert.deepStrictEqual([fb.moneda, fb.monto, fb.fecha, fb.liquidado], ['ARS', 185144, '2026-08-20', false]);
   const sep = gastos.find(m => m.descripcion === 'Plan Dreamina');
   assert.strictEqual(sep.fecha, '2026-09-01');
   const ult = gastos[gastos.length - 1];
   assert.deepStrictEqual([ult.fecha, ult.monto, ult.liquidado], ['2026-11-01', 29.4, false]);
-  // las filas por encima de "PAGADO" quedan liquidadas
-  assert.strictEqual(gastos.filter(m => m.liquidado).length, 20);
+  // nada viene liquidado: "PAGADO" en la planilla significa pagado al proveedor
+  assert.strictEqual(gastos.filter(m => m.liquidado).length, 0);
   assert.deepStrictEqual([ingresos[0].descripcion, ingresos[0].monto, ingresos[0].fecha], ['Jorge — OCTUBRE', 11600, '2026-10-01']);
 });
 

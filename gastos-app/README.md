@@ -60,7 +60,7 @@ La app no modifica “Hoja 1”. Crea dos hojas nuevas en la misma planilla:
 | `Config` | Cotización del dólar y socios |
 
 **Importar “Hoja 1”** copia los gastos históricos a `Movimientos`:
-- Las filas por encima de la fila “PAGADO” quedan marcadas como liquidadas.
+- La fila “PAGADO” se ignora (indica que esos servicios ya se pagaron al proveedor); ningún gasto viene liquidado.
 - Las fechas sin año (“07/08”) toman el año de la fila anterior; “SEP” → 1/9; las filas sin fecha heredan
   la de arriba (queda anotado en la nota).
 - Si una fila tiene USD y ARS a la vez, se toma USD y el monto ARS queda en la nota.
