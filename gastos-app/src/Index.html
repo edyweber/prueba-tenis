@@ -96,8 +96,8 @@
   <section id="tab-resumen" class="hidden">
     <div class="kpis" id="kpis"></div>
     <div class="grid">
-      <div class="card">
-        <h2>Cuentas entre socios</h2>
+      <div class="card" style="grid-column: 1 / -1">
+        <h2>Cuentas entre socios (pendientes de saldar)</h2>
         <p class="muted" id="saldoExplica"></p>
         <div class="scroll"><table id="tblSaldos"></table></div>
         <h2 style="margin-top:16px">Para quedar a mano</h2>
@@ -314,7 +314,10 @@
       kpi('Pendiente de liquidar', usd(s.gastos), 'gastos en ' + s.n + ' movimientos sin saldar', '')
     ].join('');
 
-    $('#saldoExplica').innerHTML = 'Sobre movimientos pendientes. Resultado ' + usd(s.resultado) + ' repartido entre ' +
+    var liq = state.movimientos.filter(function (m) { return m.liquidado && isGasto(m); });
+    $('#saldoExplica').innerHTML = (liq.length ? 'Solo cuenta lo que falta saldar: no incluye ' + usd(sum(liq, enUSD)) + ' en ' + liq.length +
+      ' gastos ya liquidados (los de arriba de la fila “PAGADO” de la planilla). El total gastado por cada uno está en “Gastos por persona”. ' : '') +
+      'Resultado pendiente ' + usd(s.resultado) + ' repartido entre ' +
       s.filas.length + ' socios = ' + usd(s.parte) + ' c/u. <b>Saldo positivo</b>: le tienen que devolver; <b>negativo</b>: tiene que poner.';
     var rows = s.filas.map(function (f) {
       return '<tr><td>' + esc(f.nombre) + '</td><td class="n">' + usd(f.pagado) + '</td><td class="n hide-sm">' + usd(f.cobrado) +
