@@ -8,7 +8,7 @@ los datos quedan en el Sheet y se publica con una URL pública protegida con con
 
 ## Qué hace
 
-- **Resumen**: gastos, ingresos y resultado (en ARS y USD con la cotización configurada), gastos por
+- **Resumen**: gastos, ingresos y resultado, todo en dólares (lo pagado en pesos se convierte con la cotización configurada), gastos por
   persona, por mes y por concepto.
 - **Cuentas entre socios**: cuánto pagó y cobró cada uno, cuánto le toca (resultado repartido en partes
   iguales) y las transferencias sugeridas para quedar a mano. Lo que no tiene persona asignada (por

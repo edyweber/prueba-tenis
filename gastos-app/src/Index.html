@@ -241,8 +241,8 @@
   function sum(arr, f) { return arr.reduce(function (a, x) { return a + f(x); }, 0); }
 
   // ------------------------------------------------ contabilidad
-  /** Todo se pasa a pesos con la cotización configurada (como hace la planilla). */
-  function enARS(m) { return m.moneda === 'USD' ? m.monto * state.config.dolar : m.monto; }
+  /** Todo se pasa a dólares; los montos en pesos se convierten con la cotización configurada. */
+  function enUSD(m) { return m.moneda === 'ARS' ? m.monto / state.config.dolar : m.monto; }
 
   /**
    * Saldo de cada socio sobre los movimientos pendientes (no liquidados):
@@ -256,18 +256,18 @@
   function calcularSaldos() {
     var socios = state.config.socios;
     var pend = state.movimientos.filter(function (m) { return !m.liquidado; });
-    var gastos = sum(pend.filter(isGasto), enARS);
-    var ingresos = sum(pend.filter(isIngreso), enARS);
+    var gastos = sum(pend.filter(isGasto), enUSD);
+    var ingresos = sum(pend.filter(isIngreso), enUSD);
     var resultado = ingresos - gastos;
     var parte = socios.length ? resultado / socios.length : 0;
     var filas = socios.map(function (s) {
       var mios = pend.filter(function (m) { return m.persona === s; });
-      var pagado = sum(mios.filter(isGasto), enARS);
-      var cobrado = sum(mios.filter(isIngreso), enARS);
+      var pagado = sum(mios.filter(isGasto), enUSD);
+      var cobrado = sum(mios.filter(isIngreso), enUSD);
       return { nombre: s, pagado: pagado, cobrado: cobrado, parte: parte, saldo: pagado - cobrado + parte };
     });
     var fuera = pend.filter(function (m) { return socios.indexOf(m.persona) < 0; });
-    var caja = { gastos: sum(fuera.filter(isGasto), enARS), ingresos: sum(fuera.filter(isIngreso), enARS) };
+    var caja = { gastos: sum(fuera.filter(isGasto), enUSD), ingresos: sum(fuera.filter(isIngreso), enUSD) };
     caja.saldo = caja.gastos - caja.ingresos;
     return { filas: filas, gastos: gastos, ingresos: ingresos, resultado: resultado, parte: parte, caja: caja, n: pend.length };
   }
@@ -276,16 +276,16 @@
 
   /** Transferencias mínimas: los que deben le pagan a los que tienen saldo a favor. */
   function transferencias(filas) {
-    var deudores = filas.filter(function (f) { return f.saldo < -1; }).map(function (f) { return { n: f.nombre, v: -f.saldo }; });
-    var acreedores = filas.filter(function (f) { return f.saldo > 1; }).map(function (f) { return { n: f.nombre, v: f.saldo }; });
+    var deudores = filas.filter(function (f) { return f.saldo < -0.01; }).map(function (f) { return { n: f.nombre, v: -f.saldo }; });
+    var acreedores = filas.filter(function (f) { return f.saldo > 0.01; }).map(function (f) { return { n: f.nombre, v: f.saldo }; });
     deudores.sort(function (a, b) { return b.v - a.v; }); acreedores.sort(function (a, b) { return b.v - a.v; });
     var out = [], i = 0, j = 0;
     while (i < deudores.length && j < acreedores.length) {
       var x = Math.min(deudores[i].v, acreedores[j].v);
       out.push({ de: deudores[i].n, a: acreedores[j].n, monto: x });
       deudores[i].v -= x; acreedores[j].v -= x;
-      if (deudores[i].v < 1) i++;
-      if (acreedores[j].v < 1) j++;
+      if (deudores[i].v < 0.01) i++;
+      if (acreedores[j].v < 0.01) j++;
     }
     return out;
   }
@@ -297,7 +297,7 @@
     $('#tabs').classList.remove('hidden');
     $('#logout').classList.remove('hidden');
     $('#importBanner').classList.toggle('hidden', state.importado);
-    $('#cotiz').textContent = 'Dólar: ' + ars(state.config.dolar) + ' · ' + state.movimientos.length + ' movimientos';
+    $('#cotiz').textContent = 'Cotización: US$ 1 = ' + ars(state.config.dolar) + ' · ' + state.movimientos.length + ' movimientos';
     renderResumen(); renderSelects(); renderMovimientos(); renderConfig();
     showTab(currentTab);
   }
@@ -305,29 +305,29 @@
   function renderResumen() {
     var all = state.movimientos;
     var G = all.filter(isGasto), I = all.filter(isIngreso);
-    var tg = sum(G, enARS), ti = sum(I, enARS), d = state.config.dolar;
+    var tg = sum(G, enUSD), ti = sum(I, enUSD), d = state.config.dolar;
     var s = calcularSaldos();
     $('#kpis').innerHTML = [
-      kpi('Gastos totales', ars(tg), usd(tg / d) + ' · ' + G.length + ' gastos', 'gasto'),
-      kpi('Ingresos totales', ars(ti), usd(ti / d) + ' · ' + I.length + ' ingresos', 'ingreso'),
-      kpi('Resultado', ars(ti - tg), usd((ti - tg) / d), ti - tg >= 0 ? 'ingreso' : 'gasto'),
-      kpi('Pendiente de liquidar', ars(s.gastos), 'gastos en ' + s.n + ' movimientos sin saldar', '')
+      kpi('Gastos totales', usd(tg), G.length + ' gastos', 'gasto'),
+      kpi('Ingresos totales', usd(ti), I.length + ' ingresos', 'ingreso'),
+      kpi('Resultado', usd(ti - tg), 'ingresos − gastos', ti - tg >= 0 ? 'ingreso' : 'gasto'),
+      kpi('Pendiente de liquidar', usd(s.gastos), 'gastos en ' + s.n + ' movimientos sin saldar', '')
     ].join('');
 
-    $('#saldoExplica').innerHTML = 'Sobre movimientos pendientes. Resultado ' + ars(s.resultado) + ' repartido entre ' +
-      s.filas.length + ' socios = ' + ars(s.parte) + ' c/u. <b>Saldo positivo</b>: le tienen que devolver; <b>negativo</b>: tiene que poner.';
+    $('#saldoExplica').innerHTML = 'Sobre movimientos pendientes. Resultado ' + usd(s.resultado) + ' repartido entre ' +
+      s.filas.length + ' socios = ' + usd(s.parte) + ' c/u. <b>Saldo positivo</b>: le tienen que devolver; <b>negativo</b>: tiene que poner.';
     var rows = s.filas.map(function (f) {
-      return '<tr><td>' + esc(f.nombre) + '</td><td class="n">' + ars(f.pagado) + '</td><td class="n hide-sm">' + ars(f.cobrado) +
-        '</td><td class="n hide-sm">' + ars(f.parte) + '</td><td class="n ' + (f.saldo >= 0 ? 'ingreso' : 'gasto') + '"><b>' + ars(f.saldo) + '</b></td></tr>';
+      return '<tr><td>' + esc(f.nombre) + '</td><td class="n">' + usd(f.pagado) + '</td><td class="n hide-sm">' + usd(f.cobrado) +
+        '</td><td class="n hide-sm">' + usd(f.parte) + '</td><td class="n ' + (f.saldo >= 0 ? 'ingreso' : 'gasto') + '"><b>' + usd(f.saldo) + '</b></td></tr>';
     });
     if (s.caja.gastos || s.caja.ingresos) {
-      rows.push('<tr class="muted"><td>' + CAJA + '</td><td class="n">' + ars(s.caja.gastos) + '</td><td class="n hide-sm">' + ars(s.caja.ingresos) +
-        '</td><td class="n hide-sm">—</td><td class="n ' + (s.caja.saldo >= 0 ? 'ingreso' : 'gasto') + '"><b>' + ars(s.caja.saldo) + '</b></td></tr>');
+      rows.push('<tr class="muted"><td>' + CAJA + '</td><td class="n">' + usd(s.caja.gastos) + '</td><td class="n hide-sm">' + usd(s.caja.ingresos) +
+        '</td><td class="n hide-sm">—</td><td class="n ' + (s.caja.saldo >= 0 ? 'ingreso' : 'gasto') + '"><b>' + usd(s.caja.saldo) + '</b></td></tr>');
     }
     $('#tblSaldos').innerHTML = '<tr><th>Socio</th><th class="n">Pagó</th><th class="n hide-sm">Cobró</th><th class="n hide-sm">Le toca</th><th class="n">Saldo</th></tr>' + rows.join('');
     var tr = transferencias(s.filas.concat(s.caja.gastos || s.caja.ingresos ? [{ nombre: CAJA, saldo: s.caja.saldo }] : []));
     $('#transferencias').innerHTML = tr.length ? '<table>' + tr.map(function (t) {
-      return '<tr><td>' + esc(t.de) + ' → ' + esc(t.a) + '</td><td class="n"><b>' + ars(t.monto) + '</b></td><td class="n muted">' + usd(t.monto / d) + '</td></tr>';
+      return '<tr><td>' + esc(t.de) + ' → ' + esc(t.a) + '</td><td class="n"><b>' + usd(t.monto) + '</b></td></tr>';
     }).join('') + '</table>' : '<p class="muted">Están a mano.</p>';
     if (s.caja.gastos) {
       $('#transferencias').innerHTML += '<p class="muted">Hay gastos sin persona asignada; se cuentan como pagados por la ' + CAJA + '.</p>';
@@ -335,12 +335,12 @@
 
     // por persona (todos los gastos)
     var porPersona = groupBy(G, function (m) { return sinAsignar(m.persona); });
-    var maxP = Math.max.apply(null, Object.keys(porPersona).map(function (k) { return sum(porPersona[k], enARS); }).concat([1]));
-    $('#tblPersonas').innerHTML = '<tr><th>Persona</th><th class="n">USD</th><th class="n">ARS</th><th class="n">Total en ARS</th><th class="hide-sm" style="width:25%"></th></tr>' +
-      sortedKeys(porPersona, enARS).map(function (k) {
-        var l = porPersona[k], t = sum(l, enARS);
+    var maxP = Math.max.apply(null, Object.keys(porPersona).map(function (k) { return sum(porPersona[k], enUSD); }).concat([1]));
+    $('#tblPersonas').innerHTML = '<tr><th>Persona</th><th class="n">Pagado en USD</th><th class="n">Pagado en ARS</th><th class="n">Total en USD</th><th class="hide-sm" style="width:25%"></th></tr>' +
+      sortedKeys(porPersona, enUSD).map(function (k) {
+        var l = porPersona[k], t = sum(l, enUSD);
         return '<tr><td>' + esc(k) + ' <span class="muted">(' + l.length + ')</span></td><td class="n">' + usd(sum(l, soloMoneda('USD'))) +
-          '</td><td class="n">' + ars(sum(l, soloMoneda('ARS'))) + '</td><td class="n"><b>' + ars(t) + '</b></td><td class="hide-sm"><div class="bar" style="width:' + (100 * t / maxP) + '%"></div></td></tr>';
+          '</td><td class="n">' + usd(sum(l.filter(function (m) { return m.moneda === 'ARS'; }), enUSD)) + '</td><td class="n"><b>' + usd(t) + '</b></td><td class="hide-sm"><div class="bar" style="width:' + (100 * t / maxP) + '%"></div></td></tr>';
       }).join('');
 
     // por mes
@@ -348,19 +348,19 @@
     var meses = Object.keys(porMes).sort().reverse();
     $('#tblMeses').innerHTML = '<tr><th>Mes</th><th class="n">Gastos</th><th class="n">Ingresos</th><th class="n">Resultado</th></tr>' +
       meses.map(function (k) {
-        var g = sum(porMes[k].filter(isGasto), enARS), i = sum(porMes[k].filter(isIngreso), enARS);
-        return '<tr><td>' + mesLabel(k) + '</td><td class="n gasto">' + ars(g) + '</td><td class="n ingreso">' + ars(i) +
-          '</td><td class="n"><b>' + ars(i - g) + '</b></td></tr>';
+        var g = sum(porMes[k].filter(isGasto), enUSD), i = sum(porMes[k].filter(isIngreso), enUSD);
+        return '<tr><td>' + mesLabel(k) + '</td><td class="n gasto">' + usd(g) + '</td><td class="n ingreso">' + usd(i) +
+          '</td><td class="n"><b>' + usd(i - g) + '</b></td></tr>';
       }).join('');
 
     // por concepto: agrupa por la primera palabra significativa de la descripción
     var porConcepto = groupBy(G, concepto);
-    var keys = sortedKeys(porConcepto, enARS);
-    var maxC = keys.length ? sum(porConcepto[keys[0]], enARS) : 1;
-    $('#tblConceptos').innerHTML = '<tr><th>Concepto</th><th class="n">Total en ARS</th><th class="hide-sm" style="width:30%"></th></tr>' +
+    var keys = sortedKeys(porConcepto, enUSD);
+    var maxC = keys.length ? sum(porConcepto[keys[0]], enUSD) : 1;
+    $('#tblConceptos').innerHTML = '<tr><th>Concepto</th><th class="n">Total en USD</th><th class="hide-sm" style="width:30%"></th></tr>' +
       keys.slice(0, 15).map(function (k) {
-        var t = sum(porConcepto[k], enARS);
-        return '<tr><td>' + esc(k) + ' <span class="muted">(' + porConcepto[k].length + ')</span></td><td class="n">' + ars(t) +
+        var t = sum(porConcepto[k], enUSD);
+        return '<tr><td>' + esc(k) + ' <span class="muted">(' + porConcepto[k].length + ')</span></td><td class="n">' + usd(t) +
           '</td><td class="hide-sm"><div class="bar" style="width:' + (100 * t / maxC) + '%"></div></td></tr>';
       }).join('');
   }
@@ -412,15 +412,15 @@
       if (q && (m.descripcion + ' ' + m.nota + ' ' + m.persona).toLowerCase().indexOf(q) < 0) return false;
       return true;
     }).sort(function (a, b) { return (b.fecha || '').localeCompare(a.fecha || ''); });
-    var g = sum(list.filter(isGasto), enARS), i = sum(list.filter(isIngreso), enARS);
-    $('#movTotal').textContent = list.length + ' movimientos · gastos ' + ars(g) + ' · ingresos ' + ars(i);
-    $('#tblMov').innerHTML = '<tr><th>Fecha</th><th>Descripción</th><th>Persona</th><th class="n">Monto</th><th class="n hide-sm">En ARS</th><th></th></tr>' +
+    var g = sum(list.filter(isGasto), enUSD), i = sum(list.filter(isIngreso), enUSD);
+    $('#movTotal').textContent = list.length + ' movimientos · gastos ' + usd(g) + ' · ingresos ' + usd(i);
+    $('#tblMov').innerHTML = '<tr><th>Fecha</th><th>Descripción</th><th>Persona</th><th class="n">Monto</th><th class="n hide-sm">En USD</th><th></th></tr>' +
       list.map(function (m) {
         var cls = m.tipo === 'Gasto' ? 'gasto' : 'ingreso', sign = m.tipo === 'Gasto' ? '−' : '+';
         return '<tr><td>' + fechaTxt(m.fecha) + '</td><td>' + esc(m.descripcion) +
           (m.liquidado ? ' <span class="pill">liquidado</span>' : '') +
           (m.nota ? '<div class="muted">' + esc(m.nota) + '</div>' : '') + '</td><td>' + esc(sinAsignar(m.persona)) +
-          '</td><td class="n ' + cls + '">' + sign + ' ' + orig(m) + '</td><td class="n hide-sm muted">' + ars(enARS(m)) +
+          '</td><td class="n ' + cls + '">' + sign + ' ' + orig(m) + '</td><td class="n hide-sm muted">' + usd(enUSD(m)) +
           '</td><td class="n"><button class="btn danger" title="Borrar" data-del="' + esc(m.id) + '">✕</button></td></tr>';
       }).join('');
   }
